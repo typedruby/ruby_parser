@@ -1,0 +1,24 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    hoe (3.16.1)
+      rake (>= 0.8, < 13.0)
+    minitest (5.10.3)
+    oedipus_lex (2.5.0)
+    racc (1.4.14)
+    rake (10.5.0)
+    sexp_processor (4.10.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  hoe (~> 3.16)
+  minitest
+  oedipus_lex (~> 2.5)
+  racc (~> 1.4.6)
+  rake (< 11)
+  sexp_processor (~> 4.9)
+
+BUNDLED WITH
+   1.14.5
