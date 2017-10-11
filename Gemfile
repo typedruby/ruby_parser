@@ -1,5 +1,6 @@
 source "https://rubygems.org"
 
+gem "pry"
 gem "hoe", "~> 3.16"
 gem "racc", "~> 1.4.6"
 gem "oedipus_lex", "~> 2.5"

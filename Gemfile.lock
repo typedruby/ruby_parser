@@ -1,10 +1,15 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    coderay (1.1.2)
     hoe (3.16.1)
       rake (>= 0.8, < 13.0)
+    method_source (0.9.0)
     minitest (5.10.3)
     oedipus_lex (2.5.0)
+    pry (0.11.1)
+      coderay (~> 1.1.0)
+      method_source (~> 0.9.0)
     racc (1.4.14)
     rake (10.5.0)
     sexp_processor (4.10.0)
@@ -16,6 +21,7 @@ DEPENDENCIES
   hoe (~> 3.16)
   minitest
   oedipus_lex (~> 2.5)
+  pry
   racc (~> 1.4.6)
   rake (< 11)
   sexp_processor (~> 4.9)
