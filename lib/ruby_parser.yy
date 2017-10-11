@@ -245,6 +245,10 @@ rule
                     {
                       result = new_masgn val[0], val[2]
                     }
+                | kDEF tIVAR tCOLON tr_type
+                    {
+                      result = nil
+                    }
                 | expr
 
     command_asgn: lhs tEQL command_call
@@ -495,6 +499,10 @@ rule
 
                       result = s(:const, s(:colon2, val[0], val[2].to_sym), nil)
                     }
+                | primary_value tCOLON2 tLBRACK2 tr_types rbracket
+                    {
+                      result = val[0]
+                    }
                 | tCOLON3 tCONSTANT
                     {
                       if (self.in_def || self.in_single > 0) then
@@ -570,6 +578,10 @@ rule
                 | cname
                     {
                       result = val[0].to_sym
+                    }
+                | primary_value tCOLON2 tLBRACK2 tr_gendeclargs rbracket
+                    {
+                      result = val[0]
                     }
                 | primary_value tCOLON2 cname
                     {
@@ -1019,6 +1031,10 @@ rule
                       result = val[1] || s(:nil)
                       result.paren = true
                     }
+                | tLPAREN expr tCOLON tr_type tRPAREN
+                    {
+                      result = val[1]
+                    }
                 | primary_value tCOLON2 tCONSTANT
                     {
                       result = s(:colon2, val[0], val[2].to_sym)
@@ -1459,7 +1475,7 @@ opt_block_args_tail: tCOMMA block_args_tail
                     }
 
  opt_block_param: none { result = 0 }
-                | block_param_def
+                | block_param_def tr_returnsig
 
  block_param_def: tPIPE opt_bv_decl tPIPE
                     {
@@ -2062,19 +2078,19 @@ keyword_variable: kNIL      { result = s(:nil)   }
                       debug20 30, val, result
                     }
 
-       f_arglist: tLPAREN2 f_args rparen
+       f_arglist: tr_methodgenargs tLPAREN2 f_args rparen
+                    { lexer.lex_state = :expr_value }
+                  tr_returnsig
                     {
-                      result = val[1]
-                      self.lexer.lex_state = :expr_beg
-                      self.lexer.command_start = true
+                      result = val[2]
                       # TODO:
                       # $<num>$ = parser->parser_in_kwarg;
                       # parser->parser_in_kwarg = 1;
                     }
-                | f_args term
+                | tr_methodgenargs f_args tr_returnsig term
                     {
-                      # TODO: parser->parser_in_kwarg = $<num>1;
-                      result = val[0]
+                      # TODO: parser->parser_in_kwarg = $<num>2;
+                      result = val[1]
                       self.lexer.lex_state = :expr_beg
                       self.lexer.command_start = true
                     }
@@ -2163,11 +2179,7 @@ keyword_variable: kNIL      { result = s(:nil)   }
                       result = args val
                     }
 
-       f_bad_arg: tCONSTANT
-                    {
-                      yyerror "formal argument cannot be a constant"
-                    }
-                | tIVAR
+       f_bad_arg: tIVAR
                     {
                       yyerror "formal argument cannot be an instance variable"
                     }
@@ -2192,13 +2204,19 @@ keyword_variable: kNIL      { result = s(:nil)   }
 #if V >= 22
       f_arg_asgn: f_norm_arg
 
-      f_arg_item: f_arg_asgn
+      f_arg_item: tr_argsig f_arg_asgn
+                    {
+                      result = val[1]
+                    }
                 | tLPAREN f_margs rparen
                     {
                       result = val[1]
                     }
 #else
-      f_arg_item: f_norm_arg
+      f_arg_item: tr_argsig f_norm_arg
+                    {
+                      result = val[1]
+                    }
                 | tLPAREN f_margs rparen
                     {
                       result = val[1]
@@ -2232,24 +2250,24 @@ keyword_variable: kNIL      { result = s(:nil)   }
                     }
 
 #if V == 20
-            f_kw: tLABEL arg_value
+            f_kw: tr_argsig tLABEL arg_value
 #else
          f_label: tLABEL
 
-            f_kw: f_label arg_value
+            f_kw: tr_argsig f_label arg_value
 #endif
                     {
                       # TODO: call_args
-                      label, _ = val[0] # TODO: fix lineno?
+                      label, _ = val[1] # TODO: fix lineno?
                       identifier = label.to_sym
                       self.env[identifier] = :lvar
 
-                      result = s(:array, s(:kwarg, identifier, val[1]))
+                      result = s(:array, s(:kwarg, identifier, val[2]))
                     }
 #if V >= 21
-                | f_label
+                | tr_argsig f_label
                     {
-                      label, _ = val[0] # TODO: fix lineno?
+                      label, _ = val[1] # TODO: fix lineno?
                       identifier = label.to_sym
                       self.env[identifier] = :lvar
 
@@ -2258,22 +2276,22 @@ keyword_variable: kNIL      { result = s(:nil)   }
 #endif
 
 #if V == 20
-      f_block_kw: tLABEL primary_value
+      f_block_kw: tr_argsig tLABEL primary_value
 #else
-      f_block_kw: f_label primary_value
+      f_block_kw: tr_argsig f_label primary_value
 #endif
                     {
                       # TODO: call_args
-                      label, _ = val[0] # TODO: fix lineno?
+                      label, _ = val[1] # TODO: fix lineno?
                       identifier = label.to_sym
                       self.env[identifier] = :lvar
 
-                      result = s(:array, s(:kwarg, identifier, val[1]))
+                      result = s(:array, s(:kwarg, identifier, val[2]))
                     }
 #if V >= 21
-                | f_label
+                | tr_argsig f_label
                     {
-                      label, _ = val[0] # TODO: fix lineno?
+                      label, _ = val[1] # TODO: fix lineno?
                       identifier = label.to_sym
                       self.env[identifier] = :lvar
 
@@ -2297,36 +2315,36 @@ keyword_variable: kNIL      { result = s(:nil)   }
      kwrest_mark: tPOW
                 | tDSTAR
 
-        f_kwrest: kwrest_mark tIDENTIFIER
+        f_kwrest: tr_argsig kwrest_mark tIDENTIFIER
                     {
-                      result = :"**#{val[1]}"
+                      result = :"**#{val[2]}"
                     }
-                | kwrest_mark
+                | tr_argsig kwrest_mark
                     {
                       result = :"**"
                     }
 
 #if V == 20
-           f_opt: tIDENTIFIER tEQL arg_value
+           f_opt: tr_argsig tIDENTIFIER tEQL arg_value
 #elif V == 21
-           f_opt: f_norm_arg tEQL arg_value
+           f_opt: tr_argsig f_norm_arg tEQL arg_value
 #else
-           f_opt: f_arg_asgn tEQL arg_value
+           f_opt: tr_argsig f_arg_asgn tEQL arg_value
 #endif
                     {
-                      result = self.assignable val[0], val[2]
+                      result = self.assignable val[1], val[3]
                       # TODO: detect duplicate names
                     }
 
 #if V == 20
-     f_block_opt: tIDENTIFIER tEQL primary_value
+     f_block_opt: tr_argsig tIDENTIFIER tEQL primary_value
 #elif V == 21
-     f_block_opt: f_norm_arg tEQL primary_value
+     f_block_opt: tr_argsig f_norm_arg tEQL primary_value
 #else
-     f_block_opt: f_arg_asgn tEQL primary_value
+     f_block_opt: tr_argsig f_arg_asgn tEQL primary_value
 #endif
                     {
-                      result = self.assignable val[0], val[2]
+                      result = self.assignable val[1], val[3]
                     }
 
   f_block_optarg: f_block_opt
@@ -2350,14 +2368,14 @@ keyword_variable: kNIL      { result = s(:nil)   }
 
     restarg_mark: tSTAR2 | tSTAR
 
-      f_rest_arg: restarg_mark tIDENTIFIER
+      f_rest_arg: tr_argsig restarg_mark tIDENTIFIER
                     {
                       # TODO: differs from parse.y - needs tests
-                      name = val[1].to_sym
+                      name = val[2].to_sym
                       self.assignable name
                       result = :"*#{name}"
                     }
-                | restarg_mark
+                | tr_argsig restarg_mark
                     {
                       name = :"*"
                       self.env[name] = :lvar
@@ -2366,12 +2384,16 @@ keyword_variable: kNIL      { result = s(:nil)   }
 
      blkarg_mark: tAMPER2 | tAMPER
 
-     f_block_arg: blkarg_mark tIDENTIFIER
+     f_block_arg: tr_argsig blkarg_mark tIDENTIFIER
                     {
-                      identifier = val[1].to_sym
+                      identifier = val[2].to_sym
 
                       self.env[identifier] = :lvar
                       result = "&#{identifier}".to_sym
+                    }
+                | tr_argsig blkarg_mark
+                    {
+                      result = nil
                     }
 
  opt_f_block_arg: tCOMMA f_block_arg
@@ -2461,6 +2483,53 @@ keyword_variable: kNIL      { result = s(:nil)   }
                 | terms tSEMI { yyerrok }
 
             none: { result = nil; }
+
+        tr_cpath: tCOLON3 tCONSTANT
+                | tCONSTANT
+                | tr_cpath tCOLON2 tCONSTANT
+
+       tr_types: tr_types tCOMMA tr_type
+               | tr_type
+
+         tr_type: tr_cpath
+                | tr_cpath tCOLON2 tLBRACK2 tr_types rbracket
+                | tLBRACK tr_type rbracket
+                | tLBRACK tr_type tCOMMA tr_types rbracket
+                | tLBRACE tr_type tASSOC tr_type tRCURLY
+                | tLBRACE tr_blockproto tr_returnsig tRCURLY
+                | tTILDE tr_type
+                | kNIL
+                | tSYMBOL
+                | tLPAREN tr_union_type rparen
+
+   tr_union_type: tr_union_type tPIPE tr_type
+                | tr_type
+
+       tr_argsig: tr_type
+                  { lexer.lex_state = :expr_beg }
+                | # nothing
+
+    tr_returnsig: tASSOC tr_type
+                | # nothing
+
+  tr_gendeclargs: tr_gendeclargs tCOMMA tr_gendeclarg
+                | tr_gendeclarg
+
+   tr_gendeclarg: tCONSTANT
+                | tCONSTANT tCOLON tr_type
+
+tr_methodgenargs: tLBRACK2 tr_gendeclargs tr_constraints rbracket
+                | # nothing
+
+  tr_constraints: tr_constraints tSEMI tr_constraint
+                | # nothing
+
+   tr_constraint: tr_type tEQL tr_type
+                | tr_type tCOLON tr_type
+
+   tr_blockproto: { env.extend(:dynamic) }
+                  block_param_def
+                  { env.unextend }
 end
 
 ---- inner
