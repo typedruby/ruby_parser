@@ -731,7 +731,7 @@ class RubyLexer
         self.paren_nest -= 1 # HACK? I dunno, or bug in MRI
         return result(:expr_arg, :tAREF, "[]")
       else
-        rb_compile_error "unexpected '['"
+        token = :tLBRACK2
       end
     elsif is_beg? then
       token = :tLBRACK
