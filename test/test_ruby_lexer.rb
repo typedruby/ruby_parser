@@ -813,11 +813,6 @@ class TestRubyLexer < Minitest::Test
     end
   end
 
-  def test_yylex_def_bad_name
-    self.lex_state = :expr_fname
-    refute_lex("def [ ", :kDEF, "def")
-  end
-
   def test_yylex_div
     assert_lex3("a / 2",
                 nil,
