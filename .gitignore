@@ -1,0 +1,6 @@
+/.bundle
+/lib/ruby*_parser.rb
+/lib/ruby*_parser.output
+/lib/ruby*_parser.y
+/lib/ruby_lexer.rex.rb
+/vendor/bundle
